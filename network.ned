@@ -1,3 +1,5 @@
+// Este archivo describe el modelo de la conexion y la definicion de los modulos
+
 simple Generator
 {
     parameters:

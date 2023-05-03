@@ -14,9 +14,9 @@ public:
     Sink();
     virtual ~Sink();
 protected:
-    virtual void initialize();
-    virtual void finish();
-    virtual void handleMessage(cMessage *msg);
+    virtual void initialize();                  // Ejecuta una vez al iniciar el modulo
+    virtual void finish();                      // Ejecuta una vez al terminal la ejecucion del modulo
+    virtual void handleMessage(cMessage *msg);  // Llamada cada vez que hay un evento
 };
 
 Define_Module(Sink);
@@ -39,7 +39,7 @@ void Sink::finish(){
     recordScalar("Number of packets", delayStats.getCount());
 }
 
-void Sink::handleMessage(cMessage * msg) {
+void Sink::handleMessage(cMessage * msg) {  // Recepcion de un nuevo paquete
     // compute queuing delay
     simtime_t delay = simTime() - msg->getCreationTime();
     // update stats

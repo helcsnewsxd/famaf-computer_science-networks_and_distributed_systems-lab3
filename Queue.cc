@@ -38,10 +38,10 @@ void Queue::initialize() {
 void Queue::finish() {
 }
 
-void Queue::handleMessage(cMessage *msg) {
+void Queue::handleMessage(cMessage *msg) { // Tiene dos eventos posibles: a) nuevo paquete; b) termine de atender un paquete
 
     // if msg is signaling an endServiceEvent
-    if (msg == endServiceEvent) {
+    if (msg == endServiceEvent) {          // b) Termine de atender el paquete
         // if packet in buffer, send next one
         if (!buffer.isEmpty()) {
             // dequeue packet
@@ -52,7 +52,8 @@ void Queue::handleMessage(cMessage *msg) {
             serviceTime = par("serviceTime");
             scheduleAt(simTime() + serviceTime, endServiceEvent);
         }
-    } else { // if msg is a data packet
+    } else {                              // a) Nuevo paquete
+        // if msg is a data packet
         // enqueue the packet
         buffer.insert(msg);
         // if the server is idle

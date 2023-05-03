@@ -34,7 +34,8 @@ void Generator::initialize() {
     // create the send packet
     sendMsgEvent = new cMessage("sendEvent");
     // schedule the first event at random time
-    scheduleAt(par("generationInterval"), sendMsgEvent);
+    scheduleAt(par("generationInterval"), sendMsgEvent); // Envia al mismo modulo el mensaje second en el tiempo first
+                                                         // par("...") trae ese parametro del archivo .ini
 }
 
 void Generator::finish() {
@@ -45,7 +46,7 @@ void Generator::handleMessage(cMessage *msg) {
     // create new packet
     cMessage *pkt = new cMessage("packet");
     // send to the output
-    send(pkt, "out");
+    send(pkt, "out"); // Nuevo paquete se envia por la gate out
 
     // compute the new departure time
     simtime_t departureTime = simTime() + par("generationInterval");
