@@ -10,8 +10,8 @@ class Queue: public cSimpleModule {
 private:
     cQueue buffer;
     cPacket *endServiceEvent;
-    cOutVector bufferSizeVector;
-    cOutVector packetDropVector;
+    cOutVector bufferSizeVector; // buffer size
+    cOutVector packetDropVector; // dropped packet count
     simtime_t serviceTime;
 
 public:
@@ -40,12 +40,13 @@ void Queue::initialize() {
     packetDropVector.setName("packetsDropped");
 }
 
+
 void Queue::finish() {
 }
 
 
 void Queue::handleMessage(cMessage *msg) {
-    int drops = 0;
+
     // if msg is signaling an endServiceEvent
     if (msg == endServiceEvent) {
         // if packet in buffer, send next one
