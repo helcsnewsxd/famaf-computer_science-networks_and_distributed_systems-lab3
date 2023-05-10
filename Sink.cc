@@ -10,17 +10,16 @@ class Sink : public cSimpleModule {
 private:
     cStdDev delayStats;
     cOutVector delayVector;
-    cOutVector packetRxVector; // received packet count
 
+    void computeStats(cMessage *message);
 public:
     Sink();
     virtual ~Sink();
 protected:
     virtual void initialize();
     virtual void finish();
-    virtual void handleMessage(cMessage *msg);
+    virtual void handleMessage(cMessage *message);
 };
-
 Define_Module(Sink);
 
 Sink::Sink() {
@@ -30,28 +29,24 @@ Sink::~Sink() {
 }
 
 void Sink::initialize(){
-    // stats and vector names
     delayStats.setName("TotalDelay");
     delayVector.setName("Delay");
-    packetRxVector.setName("packetsReceived");
 }
 
 void Sink::finish(){
-    // stats record at the end of simulation
     recordScalar("Avg delay", delayStats.getMean());
     recordScalar("Number of packets", delayStats.getCount());
 }
 
-void Sink::handleMessage(cMessage * msg) {
-    // compute queuing delay
-    simtime_t delay = simTime() - msg->getCreationTime();
-    // update stats
-    delayStats.collect(delay);
-    delayVector.record(delay);
-    // delete msg
-    delete(msg);
-    // record received packet
-    packetRxVector.record(1);
+void Sink::computeStats(cMessage *message) {
+    simtime_t queuingDelay = simTime() - message->getCreationTime();
+    delayStats.collect(queuingDelay);
+    delayVector.record(queuingDelay);
 }
 
-#endif /* SINK */
+void Sink::handleMessage(cMessage *message) {
+    computeStats(message);
+    delete(message);
+}
+
+#endif

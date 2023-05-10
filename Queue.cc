@@ -9,20 +9,24 @@ using namespace omnetpp;
 class Queue: public cSimpleModule {
 private:
     cQueue buffer;
-    cPacket *endServiceEvent;
-    cOutVector bufferSizeVector; // buffer size
-    cOutVector packetDropVector; // dropped packet count
-    simtime_t serviceTime;
+    cMessage *endServiceEvent;
 
+    cOutVector bufferSizeVector;
+    cOutVector packetDropVector;
+
+    void scheduleSendPacketWithDelay(simtime_t time);
+    void sendPacket();
+    void addPacket(cMessage *message);
+    bool isFullQueue();
+    void activeQueue();
 public:
     Queue();
     virtual ~Queue();
 protected:
     virtual void initialize();
     virtual void finish();
-    virtual void handleMessage(cMessage *msg);
+    virtual void handleMessage(cMessage *message);
 };
-
 Define_Module(Queue);
 
 Queue::Queue() {
@@ -35,50 +39,58 @@ Queue::~Queue() {
 
 void Queue::initialize() {
     buffer.setName("buffer");
-    endServiceEvent = new cPacket("endService");
     bufferSizeVector.setName("bufferSize");
     packetDropVector.setName("packetsDropped");
-}
 
+    endServiceEvent = new cMessage("endService");
+}
 
 void Queue::finish() {
 }
 
+void Queue::scheduleSendPacketWithDelay(simtime_t delay) {
+    scheduleAt(simTime() + delay, endServiceEvent);
+}
 
-void Queue::handleMessage(cMessage *msg) {
-
-    // if msg is signaling an endServiceEvent
-    if (msg == endServiceEvent) {
-        // if packet in buffer, send next one
-        if (!buffer.isEmpty()) {
-            // dequeue packet
-            cPacket *pkt = (cPacket*) buffer.pop();
-            // send packet
-            send(pkt, "out");
-            // start new service
-            serviceTime = pkt->getDuration();
-            scheduleAt(simTime() + serviceTime, endServiceEvent);
-        }
-    }
-    else { // if msg is a data packet
-        //check buffer limit
-        if (buffer.getLength() >= par("bufferSize").intValue()) {
-            // drop the packet
-            delete msg;
-            this->bubble("packet dropped");
-            packetDropVector.record(1);
-        }
-        else {
-            // enqueue the packet
-            buffer.insert(msg);
-            bufferSizeVector.record(buffer.getLength());
-            // if the server is idle
-            if (!endServiceEvent->isScheduled()) {
-                // start the service
-                scheduleAt(simTime(), endServiceEvent);
-            }
-        }
+void Queue::sendPacket() { // Only if there is any packet
+    if (!buffer.isEmpty()) {
+        cPacket *packet = (cPacket*) buffer.pop();
+        send(packet, "out");
+        scheduleSendPacketWithDelay(packet->getDuration());
     }
 }
 
-#endif /* QUEUE */
+void Queue::addPacket(cMessage *message) {
+    if (isFullQueue()) {
+        // Drop packet
+        delete(message);
+        this->bubble("packet dropped");
+        packetDropVector.record(1);
+    } else {
+        // Add packet
+        buffer.insert(message);
+        bufferSizeVector.record(buffer.getLength());
+
+        activeQueue();
+    }
+}
+
+bool Queue::isFullQueue() {
+    return buffer.getLength() >= par("bufferSize").intValue();
+}
+
+void Queue::activeQueue() {
+    if (!endServiceEvent->isScheduled()) { // Queue is inactive
+        scheduleSendPacketWithDelay(0);
+    }
+}
+
+void Queue::handleMessage(cMessage *message) {
+    if (message == endServiceEvent) {
+        sendPacket();
+    } else {
+        addPacket(message);
+    }
+}
+
+#endif

@@ -1,3 +1,32 @@
+// Este archivo describe el modelo de la conexion y la definicion de los modulos
+
+simple Generator
+{
+    parameters:
+        volatile double generationInterval;
+        volatile int packetByteSize;
+        @display("i=block/source");
+    gates:
+        output out;
+}
+
+simple Queue
+{
+    parameters:
+        volatile int bufferSize;
+        @display("i=block/queue;q=buffer");
+    gates:
+        input in;
+        output out;
+}
+
+simple Sink
+{
+    parameters:
+        @display("i=block/sink");
+    gates:
+        input in;
+}
 
 module NodeTx
 {
@@ -36,40 +65,11 @@ module NodeRx
         }
     connections:
         in --> queue.in;
-        //case study 1:
+
+        // Case study 1
         queue.out --> { datarate = 0.5Mbps; } --> sink.in;
-        //case study 2:
-        //queue.out --> { datarate = 1Mbps; } --> sink.in;
-}
-
-simple Generator
-{
-    parameters:
-        volatile double generationInterval; // sec
-        volatile int packetByteSize;
-        @display("i=block/source");
-    gates:
-        output out;
-}
-
-simple Queue
-{
-    parameters:
-        //volatile double serviceTime; // sec
-        volatile int bufferSize;
-        @display("i=block/queue;q=buffer");
-    gates:
-        input in;
-        output out;
-}
-
-
-simple Sink
-{
-    parameters:
-        @display("i=block/sink");
-    gates:
-        input in;
+        // Case study 2
+        // queue.out --> { datarate = 1Mbps; } --> sink.in;
 }
 
 network Network
@@ -82,13 +82,14 @@ network Network
         queue: Queue {
             @display("p=130,30");
         }
-        nodeRx : NodeRx {
+        nodeRx: NodeRx {
             @display("p=230,30");
         }
     connections:
         nodeTx.out --> { datarate = 1Mbps; delay = 100us; } --> queue.in;
-        //case study 1
+
+        // Case study 1
         queue.out --> { datarate = 1Mbps; delay = 100us; } --> nodeRx.in;
-        //case study 2
-        //queue.out --> { datarate = 0.5Mbps; delay = 100us } --> nodeRx.in;
+        // Case study 2
+        // queue.out --> { datarate = 0.5Mbps; delay = 100us; } --> nodeRx.in;
 }

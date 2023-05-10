@@ -8,54 +8,62 @@ using namespace omnetpp;
 
 class Generator : public cSimpleModule {
 private:
-    cPacket *sendPacketEvent;
+    cMessage *sendMessageEvent;
+
     cStdDev transmissionStats;
     cOutVector packetTxVector; // transmitted packet count
+
+    simtime_t newDepartureTime();
+    void scheduleSendPacket(simtime_t departureTime);
+    void sendPacket();
 public:
     Generator();
     virtual ~Generator();
 protected:
     virtual void initialize();
     virtual void finish();
-    virtual void handleMessage(cMessage *msg);
+    virtual void handleMessage(cMessage *message);
 };
 Define_Module(Generator);
 
 Generator::Generator() {
-    sendPacketEvent = NULL;
-
+    sendMessageEvent = NULL;
 }
 
 Generator::~Generator() {
-    cancelAndDelete(sendPacketEvent);
+    cancelAndDelete(sendMessageEvent);
+}
+
+simtime_t Generator::newDepartureTime() {
+    return simTime() + par("generationInterval");
+}
+
+void Generator::scheduleSendPacket(simtime_t departureTime) {
+    scheduleAt(departureTime, sendMessageEvent);
+}
+
+void Generator::sendPacket() {
+    cPacket *packet = new cPacket("packet");
+    packet->setByteLength(par("packetByteSize"));
+    send(packet, "out");
+
+    packetTxVector.record(1);
 }
 
 void Generator::initialize() {
-    packetTxVector.setName("packetsTransmitted");
     transmissionStats.setName("TotalTransmissions");
-// create the send packet
-    sendPacketEvent = new cPacket("sendPacket"); // Change packet name and data type
-    sendPacketEvent->setByteLength(par("packetByteSize")); // Set byte length of the packet
-    // schedule the first event at random time
-    scheduleAt(par("generationInterval"), sendPacketEvent); 
+    packetTxVector.setName("packetsTransmitted");
+
+    sendMessageEvent = new cMessage("sendEvent");
+    scheduleSendPacket(par("generationInterval"));
 }
 
 void Generator::finish() {
 }
 
-void Generator::handleMessage(cMessage *msg) {
-
-    // create new packet
-    cPacket *pkt = new cPacket("packet"); // Change data type to cPacket*
-    pkt->setByteLength(par("packetByteSize")); // Set byte length of the packet
-    // send to the output
-    send(pkt, "out");
-    // record transmitted packet
-    packetTxVector.record(1);
-    // compute the new departure time
-    simtime_t departureTime = simTime() + par("generationInterval");
-    // schedule the new packet generation
-    scheduleAt(departureTime, sendPacketEvent);
+void Generator::handleMessage(cMessage *message) {
+    sendPacket();
+    scheduleSendPacket(newDepartureTime());
 }
 
-#endif /* GENERATOR */
+#endif
