@@ -1,5 +1,5 @@
 #
-# OMNeT++/OMNEST Makefile for redes23lab3g31
+# OMNeT++/OMNEST Makefile for lab3-kickstarter
 #
 # This file was generated with the command:
 #  opp_makemake -f --deep -O out -I.
@@ -7,7 +7,7 @@
 
 # Name of target to be created (-o option)
 TARGET_DIR = .
-TARGET_NAME = redes23lab3g31$(D)
+TARGET_NAME = lab3-kickstarter$(D)
 TARGET = $(TARGET_NAME)$(EXE_SUFFIX)
 TARGET_IMPLIB = $(TARGET_NAME)$(IMPLIB_SUFFIX)
 TARGET_IMPDEF = $(TARGET_NAME)$(IMPDEF_SUFFIX)
@@ -105,8 +105,7 @@ $O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile $(CONFIGFILE)
 
 .PHONY: all clean cleanall depend msgheaders smheaders
 
-# disabling all implicit rules
-.SUFFIXES :
+.SUFFIXES: .cc
 
 $O/%.o: %.cc $(COPTS_FILE) | msgheaders smheaders
 	@$(MKPATH) $(dir $@)

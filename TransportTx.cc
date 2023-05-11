@@ -17,6 +17,8 @@ private:
     cOutVector packetDropVector;
     cOutVector controlPacketReceivedVector;
 
+    double controlFactor;
+
     void controlFlow(cMessage *message);
 
     bool isControlPacket(cMessage *message);
@@ -56,6 +58,7 @@ void TransportTx::initialize() {
     controlPacketReceivedVector.setName("controlPacketsReceived");
 
     endServiceEvent = new cMessage("endService");
+    controlFactor = 1.0;
 }
 
 void TransportTx::finish() {
@@ -69,7 +72,11 @@ void TransportTx::controlFlow(cMessage *message) {
     int totalBuffer = controlPacket->getTotalBuffer();
     int remainingBuffer = controlPacket->getRemainingBuffer();
 
-    // Do something
+    if (remainingBuffer == 0) {
+        controlFactor *= 2.0;
+    } else if (remainingBuffer*2 <= totalBuffer && controlFactor > 1.0) {
+        controlFactor /= 2.0;
+    }
 
     delete(message);
 }
@@ -87,7 +94,7 @@ void TransportTx::sendDataPacket() { // Only if there is any packet
 }
 
 void TransportTx::scheduleSendPacketWithDelay(simtime_t delay) {
-    scheduleAt(simTime() + delay, endServiceEvent);
+    scheduleAt(simTime() + delay*controlFactor, endServiceEvent);
 }
 
 void TransportTx::addPacket(cMessage *message) {

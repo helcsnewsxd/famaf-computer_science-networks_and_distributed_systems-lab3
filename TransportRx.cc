@@ -26,6 +26,7 @@ private:
     void addPacket(cMessage *message);
 
     bool isFullQueue();
+    bool haveSpaceQueue();
 
     void activeQueue();
 
@@ -61,7 +62,7 @@ void TransportRx::finish() {
 }
 
 void TransportRx::checkBufferStatus() {
-    if (rand()%101==0) { // A condition to send controlPackets
+    if (isFullQueue() || haveSpaceQueue()) { // A condition to send controlPackets
         sendControlPacket();
     }
 }
@@ -109,6 +110,10 @@ bool TransportRx::isFullQueue() {
     return buffer.getLength() >= par("bufferSize").intValue();
 }
 
+bool TransportRx::haveSpaceQueue() {
+    return buffer.getLength()*2 <= par("bufferSize").intValue();
+}
+
 void TransportRx::activeQueue() {
     if (!endServiceEvent->isScheduled()) { // TransportRx is inactive
         scheduleSendPacketWithDelay(0);
@@ -120,9 +125,8 @@ void TransportRx::handleMessage(cMessage *message) {
         sendDataPacket();
     } else {
         addPacket(message);
+        checkBufferStatus();
     }
-
-    checkBufferStatus();
 }
 
 #endif
