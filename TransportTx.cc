@@ -19,8 +19,10 @@ private:
     cOutVector packetTxVector;
 
     double controlFactor;
+    simtime_t minSend;
+    int cntControlPackets;
 
-    void controlFlow(cMessage *message);
+    void handleControl(cMessage *message);
 
     bool isControlPacket(cMessage *message);
 
@@ -61,25 +63,43 @@ void TransportTx::initialize() {
 
     endServiceEvent = new cMessage("endService");
     controlFactor = 0;
+    minSend = 0;
+    cntControlPackets = 0;
 }
 
 void TransportTx::finish() {
 }
 
-void TransportTx::controlFlow(cMessage *message) {
+void TransportTx::handleControl(cMessage *message) {
     controlPacketReceivedVector.record(1);
 
     ControlPacket *controlPacket = (ControlPacket*) message;
 
     int totalBuffer = controlPacket->getTotalBuffer();
     int remainingBuffer = controlPacket->getRemainingBuffer();
+    simtime_t timeElapsedToReceivePacket = controlPacket->getTimeElapsedToReceivePacket();
 
-    if (remainingBuffer == 0 && controlFactor < 0.1) {
-        if(controlFactor == 0) controlFactor = 1e-300;
-        else controlFactor *= 100;
-    } else if (remainingBuffer != 0) {
-        controlFactor /= 10*(totalBuffer/remainingBuffer + 1);
+    if(minSend == 0) minSend = timeElapsedToReceivePacket;
+
+    // handle flow (sendRate)
+    if (remainingBuffer >= 0.70*totalBuffer) { // send less
+        controlFactor += 1e-2;
+    } else if (remainingBuffer <= 0.40*totalBuffer) { // send more
+        controlFactor -= 1e-2;
     }
+
+    // handle congestion
+    if (timeElapsedToReceivePacket >= 2*minSend) { // there is congestion
+        controlFactor += 1e-2;
+    } else if (timeElapsedToReceivePacket <= minSend) {// there is an ""empty"" route
+        controlFactor -= 1e-2;
+        minSend = timeElapsedToReceivePacket;
+    }
+
+    if (controlFactor > 1.0) controlFactor = 1.0;
+    if (controlFactor < 0.0) controlFactor = 0.0;
+
+    if (cntControlPackets%50 == 0) minSend = 0; // reset minTime to packetReceive
 
     delete(message);
 }
@@ -99,7 +119,7 @@ void TransportTx::sendDataPacket() { // Only if there is any packet
 }
 
 void TransportTx::scheduleSendPacketWithDelay(simtime_t delay) {
-    scheduleAt(simTime() + delay + controlFactor, endServiceEvent);
+    scheduleAt(simTime() + delay + delay*controlFactor, endServiceEvent);
 }
 
 void TransportTx::addPacket(cMessage *message) {
@@ -132,7 +152,8 @@ void TransportTx::handleMessage(cMessage *message) {
     if (message == endServiceEvent) {
         sendDataPacket();
     } else if(isControlPacket(message)) {
-        controlFlow(message);
+        cntControlPackets++;
+        handleControl(message);
     } else {
         addPacket(message);
     }

@@ -10,19 +10,22 @@ using namespace omnetpp;
 
 class TransportRx: public cSimpleModule {
 private:
-    cQueue buffer;
-    cMessage *endServiceEvent;
+    cQueue buffer, bufferControl;
+    cMessage *endServiceEvent, *endControlServiceEvent;
 
     cOutVector bufferSizeVector;
     cOutVector packetDropVector;
     cOutVector controlPacketSentVector;
     cOutVector packetReceive;
 
-    bool controlCounter;
-
-    void checkBufferStatus();
-
     void sendControlPacket();
+
+    void scheduleSendControlPacketWithDelay(simtime_t delay);
+    void addControlPacket(cMessage *message);
+
+    bool isFullControlQueue();
+
+
     void sendDataPacket();
 
     void scheduleSendPacketWithDelay(simtime_t delay);
@@ -31,6 +34,7 @@ private:
     bool isFullQueue();
     bool haveSpaceQueue();
 
+    void activeControlQueue();
     void activeQueue();
 
 public:
@@ -46,41 +50,56 @@ Define_Module(TransportRx);
 
 TransportRx::TransportRx() {
     endServiceEvent = NULL;
+    endControlServiceEvent = NULL;
 }
 
 TransportRx::~TransportRx() {
     cancelAndDelete(endServiceEvent);
+    cancelAndDelete(endControlServiceEvent);
 }
 
 void TransportRx::initialize() {
     buffer.setName("buffer");
+    bufferControl.setName("bufferControl");
     bufferSizeVector.setName("bufferSize");
     packetDropVector.setName("packetsDropped");
     controlPacketSentVector.setName("controlPacketSent");
     packetReceive.setName("packetsReceived");
 
     endServiceEvent = new cMessage("endService");
-
-    controlCounter = 0;
+    endControlServiceEvent = new cMessage("endControlService");
 }
 
 void TransportRx::finish() {
 }
 
-void TransportRx::checkBufferStatus() {
-    if(controlCounter == 0) sendControlPacket();
-    controlCounter ^= 1;
+void TransportRx::sendControlPacket() {
+    if (!bufferControl.isEmpty()) {
+        ControlPacket *controlPacket = (ControlPacket *) bufferControl.pop();
+        send(controlPacket, "toOut$o");
+        controlPacketSentVector.record(1);
+
+        scheduleSendControlPacketWithDelay(controlPacket->getDuration());
+    }
 }
 
-void TransportRx::sendControlPacket() {
-    ControlPacket* controlPacket = new ControlPacket("control packet");
-    controlPacket->setByteLength(20);
-    controlPacket->setKind(2);
-    controlPacket->setTotalBuffer(par("bufferSize").intValue());
-    controlPacket->setRemainingBuffer(par("bufferSize").intValue() - buffer.getLength());
-    send(controlPacket, "toOut$o");
+void TransportRx::scheduleSendControlPacketWithDelay(simtime_t delay) {
+    scheduleAt(simTime() + delay, endControlServiceEvent);
+}
 
-    controlPacketSentVector.record(1);
+void TransportRx::addControlPacket(cMessage *message) {
+    if (!isFullControlQueue()) {
+        ControlPacket* controlPacket = new ControlPacket("control packet");
+        controlPacket->setByteLength(20);
+        controlPacket->setKind(2);
+        controlPacket->setTotalBuffer(par("bufferSize").intValue());
+        controlPacket->setRemainingBuffer(par("bufferSize").intValue() - buffer.getLength());
+        controlPacket->setTimeElapsedToReceivePacket(message->getArrivalTime() - message->getCreationTime());
+
+        bufferControl.insert(controlPacket);
+
+        activeControlQueue();
+    }
 }
 
 void TransportRx::sendDataPacket() { // Only if there is any packet
@@ -108,8 +127,13 @@ void TransportRx::addPacket(cMessage *message) {
         bufferSizeVector.record(buffer.getLength());
         packetReceive.record(1);
 
+        addControlPacket(message);
         activeQueue();
     }
+}
+
+bool TransportRx::isFullControlQueue() {
+    return bufferControl.getLength() >= par("bufferSize").intValue();
 }
 
 bool TransportRx::isFullQueue() {
@@ -120,18 +144,25 @@ bool TransportRx::haveSpaceQueue() {
     return buffer.getLength()*2 <= par("bufferSize").intValue();
 }
 
+void TransportRx::activeControlQueue() {
+    if (!endControlServiceEvent->isScheduled()) {
+        scheduleSendControlPacketWithDelay(0);
+    }
+}
+
 void TransportRx::activeQueue() {
-    if (!endServiceEvent->isScheduled()) { // TransportRx is inactive
+    if (!endServiceEvent->isScheduled()) {
         scheduleSendPacketWithDelay(0);
     }
 }
 
 void TransportRx::handleMessage(cMessage *message) {
-    if (message == endServiceEvent) {
+    if (message == endControlServiceEvent) {
+        sendControlPacket();
+    } else if (message == endServiceEvent) {
         sendDataPacket();
     } else {
         addPacket(message);
-        checkBufferStatus();
     }
 }
 
