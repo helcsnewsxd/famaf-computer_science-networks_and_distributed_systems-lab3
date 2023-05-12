@@ -11,6 +11,8 @@ private:
     cStdDev delayStats;
     cOutVector delayVector;
 
+    cOutVector packetReceive;
+
     void computeStats(cMessage *message);
 public:
     Sink();
@@ -31,6 +33,7 @@ Sink::~Sink() {
 void Sink::initialize(){
     delayStats.setName("TotalDelay");
     delayVector.setName("Delay");
+    packetReceive.setName("packetsReceived");
 }
 
 void Sink::finish(){
@@ -42,6 +45,7 @@ void Sink::computeStats(cMessage *message) {
     simtime_t queuingDelay = simTime() - message->getCreationTime();
     delayStats.collect(queuingDelay);
     delayVector.record(queuingDelay);
+    packetReceive.record(1);
 }
 
 void Sink::handleMessage(cMessage *message) {
