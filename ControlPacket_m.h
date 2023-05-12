@@ -24,6 +24,7 @@ class ControlPacket;
  * {
  *     int totalBuffer;
  *     int remainingBuffer;
+ *     simtime_t timeElapsedToReceivePacket;
  * }
  * </pre>
  */
@@ -32,6 +33,7 @@ class ControlPacket : public ::omnetpp::cPacket
   protected:
     int totalBuffer = 0;
     int remainingBuffer = 0;
+    omnetpp::simtime_t timeElapsedToReceivePacket = SIMTIME_ZERO;
 
   private:
     void copy(const ControlPacket& other);
@@ -53,6 +55,9 @@ class ControlPacket : public ::omnetpp::cPacket
 
     virtual int getRemainingBuffer() const;
     virtual void setRemainingBuffer(int remainingBuffer);
+
+    virtual omnetpp::simtime_t getTimeElapsedToReceivePacket() const;
+    virtual void setTimeElapsedToReceivePacket(omnetpp::simtime_t timeElapsedToReceivePacket);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const ControlPacket& obj) {obj.parsimPack(b);}

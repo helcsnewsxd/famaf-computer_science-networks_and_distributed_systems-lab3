@@ -177,6 +177,7 @@ void ControlPacket::copy(const ControlPacket& other)
 {
     this->totalBuffer = other.totalBuffer;
     this->remainingBuffer = other.remainingBuffer;
+    this->timeElapsedToReceivePacket = other.timeElapsedToReceivePacket;
 }
 
 void ControlPacket::parsimPack(omnetpp::cCommBuffer *b) const
@@ -184,6 +185,7 @@ void ControlPacket::parsimPack(omnetpp::cCommBuffer *b) const
     ::omnetpp::cPacket::parsimPack(b);
     doParsimPacking(b,this->totalBuffer);
     doParsimPacking(b,this->remainingBuffer);
+    doParsimPacking(b,this->timeElapsedToReceivePacket);
 }
 
 void ControlPacket::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -191,6 +193,7 @@ void ControlPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     ::omnetpp::cPacket::parsimUnpack(b);
     doParsimUnpacking(b,this->totalBuffer);
     doParsimUnpacking(b,this->remainingBuffer);
+    doParsimUnpacking(b,this->timeElapsedToReceivePacket);
 }
 
 int ControlPacket::getTotalBuffer() const
@@ -213,6 +216,16 @@ void ControlPacket::setRemainingBuffer(int remainingBuffer)
     this->remainingBuffer = remainingBuffer;
 }
 
+omnetpp::simtime_t ControlPacket::getTimeElapsedToReceivePacket() const
+{
+    return this->timeElapsedToReceivePacket;
+}
+
+void ControlPacket::setTimeElapsedToReceivePacket(omnetpp::simtime_t timeElapsedToReceivePacket)
+{
+    this->timeElapsedToReceivePacket = timeElapsedToReceivePacket;
+}
+
 class ControlPacketDescriptor : public omnetpp::cClassDescriptor
 {
   private:
@@ -220,6 +233,7 @@ class ControlPacketDescriptor : public omnetpp::cClassDescriptor
     enum FieldConstants {
         FIELD_totalBuffer,
         FIELD_remainingBuffer,
+        FIELD_timeElapsedToReceivePacket,
     };
   public:
     ControlPacketDescriptor();
@@ -286,7 +300,7 @@ const char *ControlPacketDescriptor::getProperty(const char *propertyName) const
 int ControlPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 2+base->getFieldCount() : 2;
+    return base ? 3+base->getFieldCount() : 3;
 }
 
 unsigned int ControlPacketDescriptor::getFieldTypeFlags(int field) const
@@ -300,8 +314,9 @@ unsigned int ControlPacketDescriptor::getFieldTypeFlags(int field) const
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,    // FIELD_totalBuffer
         FD_ISEDITABLE,    // FIELD_remainingBuffer
+        FD_ISEDITABLE,    // FIELD_timeElapsedToReceivePacket
     };
-    return (field >= 0 && field < 2) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 3) ? fieldTypeFlags[field] : 0;
 }
 
 const char *ControlPacketDescriptor::getFieldName(int field) const
@@ -315,8 +330,9 @@ const char *ControlPacketDescriptor::getFieldName(int field) const
     static const char *fieldNames[] = {
         "totalBuffer",
         "remainingBuffer",
+        "timeElapsedToReceivePacket",
     };
-    return (field >= 0 && field < 2) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 3) ? fieldNames[field] : nullptr;
 }
 
 int ControlPacketDescriptor::findField(const char *fieldName) const
@@ -325,6 +341,7 @@ int ControlPacketDescriptor::findField(const char *fieldName) const
     int baseIndex = base ? base->getFieldCount() : 0;
     if (strcmp(fieldName, "totalBuffer") == 0) return baseIndex + 0;
     if (strcmp(fieldName, "remainingBuffer") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "timeElapsedToReceivePacket") == 0) return baseIndex + 2;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -339,8 +356,9 @@ const char *ControlPacketDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "int",    // FIELD_totalBuffer
         "int",    // FIELD_remainingBuffer
+        "omnetpp::simtime_t",    // FIELD_timeElapsedToReceivePacket
     };
-    return (field >= 0 && field < 2) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 3) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **ControlPacketDescriptor::getFieldPropertyNames(int field) const
@@ -425,6 +443,7 @@ std::string ControlPacketDescriptor::getFieldValueAsString(omnetpp::any_ptr obje
     switch (field) {
         case FIELD_totalBuffer: return long2string(pp->getTotalBuffer());
         case FIELD_remainingBuffer: return long2string(pp->getRemainingBuffer());
+        case FIELD_timeElapsedToReceivePacket: return simtime2string(pp->getTimeElapsedToReceivePacket());
         default: return "";
     }
 }
@@ -443,6 +462,7 @@ void ControlPacketDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int
     switch (field) {
         case FIELD_totalBuffer: pp->setTotalBuffer(string2long(value)); break;
         case FIELD_remainingBuffer: pp->setRemainingBuffer(string2long(value)); break;
+        case FIELD_timeElapsedToReceivePacket: pp->setTimeElapsedToReceivePacket(string2simtime(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'ControlPacket'", field);
     }
 }
@@ -459,6 +479,7 @@ omnetpp::cValue ControlPacketDescriptor::getFieldValue(omnetpp::any_ptr object, 
     switch (field) {
         case FIELD_totalBuffer: return pp->getTotalBuffer();
         case FIELD_remainingBuffer: return pp->getRemainingBuffer();
+        case FIELD_timeElapsedToReceivePacket: return pp->getTimeElapsedToReceivePacket().dbl();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'ControlPacket' as cValue -- field index out of range?", field);
     }
 }
@@ -477,6 +498,7 @@ void ControlPacketDescriptor::setFieldValue(omnetpp::any_ptr object, int field, 
     switch (field) {
         case FIELD_totalBuffer: pp->setTotalBuffer(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_remainingBuffer: pp->setRemainingBuffer(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_timeElapsedToReceivePacket: pp->setTimeElapsedToReceivePacket(value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'ControlPacket'", field);
     }
 }
