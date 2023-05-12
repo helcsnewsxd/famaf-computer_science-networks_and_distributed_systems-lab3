@@ -16,6 +16,7 @@ private:
     cOutVector bufferSizeVector;
     cOutVector packetDropVector;
     cOutVector controlPacketReceivedVector;
+    cOutVector packetTxVector;
 
     double controlFactor;
 
@@ -56,9 +57,10 @@ void TransportTx::initialize() {
     bufferSizeVector.setName("bufferSize");
     packetDropVector.setName("packetsDropped");
     controlPacketReceivedVector.setName("controlPacketsReceived");
+    packetTxVector.setName("packetsTransmitted");
 
     endServiceEvent = new cMessage("endService");
-    controlFactor = 1.0;
+    controlFactor = 0;
 }
 
 void TransportTx::finish() {
@@ -72,10 +74,11 @@ void TransportTx::controlFlow(cMessage *message) {
     int totalBuffer = controlPacket->getTotalBuffer();
     int remainingBuffer = controlPacket->getRemainingBuffer();
 
-    if (remainingBuffer == 0) {
-        controlFactor *= 2.0;
-    } else if (remainingBuffer*2 <= totalBuffer && controlFactor > 1.0) {
-        controlFactor /= 2.0;
+    if (remainingBuffer == 0 && controlFactor < 0.1) {
+        if(controlFactor == 0) controlFactor = 1e-300;
+        else controlFactor *= 100;
+    } else if (remainingBuffer != 0) {
+        controlFactor /= 10*(totalBuffer/remainingBuffer + 1);
     }
 
     delete(message);
@@ -90,11 +93,13 @@ void TransportTx::sendDataPacket() { // Only if there is any packet
         cPacket *packet = (cPacket*) buffer.pop();
         send(packet, "toOut$o");
         scheduleSendPacketWithDelay(packet->getDuration());
+
+        packetTxVector.record(1);
     }
 }
 
 void TransportTx::scheduleSendPacketWithDelay(simtime_t delay) {
-    scheduleAt(simTime() + delay*controlFactor, endServiceEvent);
+    scheduleAt(simTime() + delay + controlFactor, endServiceEvent);
 }
 
 void TransportTx::addPacket(cMessage *message) {

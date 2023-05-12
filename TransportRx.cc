@@ -16,6 +16,9 @@ private:
     cOutVector bufferSizeVector;
     cOutVector packetDropVector;
     cOutVector controlPacketSentVector;
+    cOutVector packetReceive;
+
+    bool controlCounter;
 
     void checkBufferStatus();
 
@@ -54,17 +57,19 @@ void TransportRx::initialize() {
     bufferSizeVector.setName("bufferSize");
     packetDropVector.setName("packetsDropped");
     controlPacketSentVector.setName("controlPacketSent");
+    packetReceive.setName("packetsReceived");
 
     endServiceEvent = new cMessage("endService");
+
+    controlCounter = 0;
 }
 
 void TransportRx::finish() {
 }
 
 void TransportRx::checkBufferStatus() {
-    if (isFullQueue() || haveSpaceQueue()) { // A condition to send controlPackets
-        sendControlPacket();
-    }
+    if(controlCounter == 0) sendControlPacket();
+    controlCounter ^= 1;
 }
 
 void TransportRx::sendControlPacket() {
@@ -101,6 +106,7 @@ void TransportRx::addPacket(cMessage *message) {
         // Add packet
         buffer.insert(message);
         bufferSizeVector.record(buffer.getLength());
+        packetReceive.record(1);
 
         activeQueue();
     }
