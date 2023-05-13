@@ -82,9 +82,9 @@ void TransportTx::handleControl(cMessage *message) {
     if(minSend == 0) minSend = timeElapsedToReceivePacket;
 
     // handle flow (sendRate)
-    if (remainingBuffer >= 0.70*totalBuffer) { // send less
+    if (remainingBuffer <= 0.30*totalBuffer) { // send less
         controlFactor += 1e-2;
-    } else if (remainingBuffer <= 0.40*totalBuffer) { // send more
+    } else if (remainingBuffer >= 0.50*totalBuffer) { // send more
         controlFactor -= 1e-2;
     }
 

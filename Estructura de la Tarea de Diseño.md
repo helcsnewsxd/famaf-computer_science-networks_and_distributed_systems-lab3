@@ -142,9 +142,9 @@ Se hacen las siguientes consideraciones:
     
     - Respecto al **flujo** se considera lo siguiente:
 
-        - Si `remainingBuffer >= 0.70*totalBuffer`, entonces se aumenta `controlFactor` en `1e-2` para demorar la salida de paquetes (porque el receptor se esta quedando sin espacio)
+        - Si `remainingBuffer <= 0.30*totalBuffer`, entonces se aumenta `controlFactor` en `1e-2` para demorar la salida de paquetes (porque el receptor se esta quedando sin espacio)
 
-        - Si `remainingBuffer <= 0.40*totalBuffer`, entonces se disminuye `controlFactor` en `1e-2` para acelerar la salida de paquetes (porque el receptor tiene espacio)
+        - Si `remainingBuffer >= 0.50*totalBuffer`, entonces se disminuye `controlFactor` en `1e-2` para acelerar la salida de paquetes (porque el receptor tiene espacio)
 
     - Respecto a la **congestión** se considera lo siguiente:
 
