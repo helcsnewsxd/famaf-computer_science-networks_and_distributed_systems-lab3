@@ -27,10 +27,6 @@ En la parte de Análisis fue que nosotros, mediante un modelo de red de colas pr
 - Buffer Queue: almacena los paquetes que van desde NodeTx a NodeRx. Tendrá un tamaño de 200.
 - Buffer NodeRx: almacena los paquetes que vienen de Queue y van hacia Sink. Tendrá un tamaño de 200.
 
-Luego de todas las modificaciones pertinentes, nuestra red quedó de la siguiente forma:
-
-![Untitled](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/NetworkAnalisis.png)
-
 A partir de estas modificaciones, analizamos dos casos de estudio, simulando distintas situaciones con los siguientes parámetros:
 
 ### Primer Caso
@@ -49,7 +45,7 @@ Los siguientes gráficos muestran la relación entre la cantidad de paquetes en 
 
 Si vemos los gráficos de izquierda a derecha, siendo el primer gráfico el de la primera fila y el último el tercero de la segunda fila, observamos cómo se llenan los buffers a medida que se aumenta el tiempo que hay entre la generación de los paquetes. 
 
-![analisiscase1-1.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/analisiscase1-1.png)
+![analisiscase1-1.png](graficos/analisiscase1-1.png)
 
 En la primera imagen, se genera un paquete relativamente rápido, ésto significa que:
 
@@ -68,7 +64,7 @@ Veamos cómo afectan estas tasas de transferencia en la pérdida de paquetes. No
 - En el primer caso, como vimos anteriormente, los paquetes se generan rápidamente, produciendo un gran movimiento en la red. Debido a que NodoRx es más lento en enviar los paquetes que le llegan, se pierden algunos en el camino (770 en total).
 - A medida que se va aumentando el intervalo de generación, vemos cómo dejan de perderse paquetes, ya que el cambio en el intervalo compensa la diferencia entre las tasas de transferencia de los nodos.
 
-![analisiscase1-2.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/analisiscase1-2.png)
+![analisiscase1-2.png](graficos/analisiscase1-2.png)
 
 ### Segundo Caso
 
@@ -80,7 +76,7 @@ Aquí veamos que también existe una tasa de transferencia menor a las demás. E
 
 **Saturación de Buffers**
 
-![analisiscase2-1.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/analisiscase2-1.png)
+![analisiscase2-1.png](graficos/analisiscase2-1.png)
 
 Efectivamente, no hay muchas diferencias entre los gráficos del caso 1 y del caso 2. Ambos casos tienen una conexión con una tasa de transferencia menor a las demás, produciendo que la congestión de la red cambie y aumente.
 
@@ -88,7 +84,7 @@ Efectivamente, no hay muchas diferencias entre los gráficos del caso 1 y del ca
 
 Veamos ahora cómo se registraron las pérdidas:
 
-![analisiscase2-2.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/analisiscase2-2.png)
+![analisiscase2-2.png](graficos/analisiscase2-2.png)
 
 Nuevamente, tenemos gráficos similares al caso 1.
 
@@ -116,39 +112,43 @@ Nuevamente, tenemos gráficos similares al caso 1.
 
 Ahora, nosotros en el enfoque anterior de análisis, jugamos con una simulación que no tenía un control de flujo y congestión específico. Es por eso que, en la tarea de diseño, el objetivo que se tiene es la re-estructuración de la red para la implementación de un algoritmo de control de flujo y congestión que nos permita poder comparar mediante un análisis los resultados de *intentar resolver los problemas* vs *no hacer nada*.
 
-### Estructura de la red **(`[network.ned](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/network.ned)`)**
+### Estructura de la red
 
 La nueva estructura de la red agrega dos elementos importantísimos que se "derivan" de la `Queue` (i.e., son parecidos en cierto aspecto). La idea es crear elementos que sean los buffers de input y output de los módulos de generación (`NodeTx`) y de recepción (`NodeRx`). Estos elementos son llamados `TransportTx` y `TransportRx`. El diagrama de los módulos `NodeTx` y `NodeRx` queda dado por las siguientes estructuras:
 
-![NodeRx.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/img/NodeRx.png)
+![NodeRx.png](img/NodeRx.png)
 
-![NodeTx.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/img/NodeTx.png)
+![NodeTx.png](img/NodeTx.png)
 
 Esto nos permite poder crear en la red un canal de retorno desde el nodo de recepción al nodo de generación, brindando la posibilidad de que el receptor lo use para poder enviar mensajes de control al emisor. La estructura final que se logra es la siguiente:
 
-[Network.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/img/Network.png)
+![Network.png](img/Network.png)
 
-### **Constantes de la red (`[omnetpp.ini](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/omnetpp.ini)`)**
+### **Constantes de la red
 
 Dada la nueva estructuración de la red, se consideran las siguientes constantes:
 
-`network **=** Network
-sim**-**time**-**limit **=** 200s
+network = Network
 
-Network.nodeTx.gen.generationInterval **=** exponential(0.1)
-Network.nodeTx.gen.packetByteSize **=** 12500
+sim-time-limit = 200s
 
-Network.queue0.bufferSize **=** 100
-Network.queue1.bufferSize **=** 200
+Network.nodeTx.gen.generationInterval = exponential(0.1)
 
-Network.nodeTx.traTx.bufferSize **=** 20000000
-Network.nodeRx.traRx.bufferSize **=** 200`
+Network.nodeTx.gen.packetByteSize = 12500
+
+Network.queue0.bufferSize = 100
+
+Network.queue1.bufferSize = 200
+
+Network.nodeTx.traTx.bufferSize = 20000000
+
+Network.nodeRx.traRx.bufferSize = 200`
 
 Lo principal para tener en cuenta es que `Network.queue0.bufferSize` se considera `100` por recomendación de los profesores (en el enunciado del proyecto) para un mejor análisis en conjunto de los problemas de flujo y congestión.
 
-### **Nuevo tipo de mensaje (`[ControlPacket.msg](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/ControlPacket.msg)`)**
+### **Nuevo tipo de mensaje**
 
-Al agregar un nuevo canal de retorno por el cual enviar mensajes, se torna importantísimo generar un nuevo tipo de paquete, el cual sea de control y permita almacenar datos que el receptor llena para que sean leídos e interpretados por el emisor para realizar alguna acción. Para ello mismo, se hace uso del archivo `[ControlPacket.msg](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/ControlPacket.msg)`.
+Al agregar un nuevo canal de retorno por el cual enviar mensajes, se torna importantísimo generar un nuevo tipo de paquete, el cual sea de control y permita almacenar datos que el receptor llena para que sean leídos e interpretados por el emisor para realizar alguna acción. Para ello mismo, se hace uso del archivo `ControlPacket.msg`.
 
 En este archivo se crea un nuevo tipo de paquete llamado `ControlPacket`, el cual contiene los datos de:
 
@@ -158,7 +158,7 @@ En este archivo se crea un nuevo tipo de paquete llamado `ControlPacket`, el cu
 
 El Framework Omnet++ se encarga automáticamente, al compilar, de crear el .h y .cc correspondientes a este nuevo tipo de paquete, creando su nueva clase que deriva de `cPacket`.
 
-### **Idea de los elementos de transporte (`[TransportTx](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/TransportTx.cc)` y `[TransportRx](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/TransportRx.cc)`)**
+### **Idea de los elementos de transporte**
 
 **TransportTx**
 
@@ -201,7 +201,7 @@ Este elemento es el encargado de:
 
 ### **Algoritmo sencillo de control de flujo y congestión**
 
-Este algoritmo sólo se implementa en secciones específicas de `[TransportTx](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/TransportTx.cc)` (en `handleControl`) y `[TransportRx](https://bitbucket.org/redes-famaf/redes23lab3g31/src/436cdc3381605f0ecfe245fe7023f7c4280a3567/TransportRx.cc)` (en `addControlPacket`).
+Este algoritmo sólo se implementa en secciones específicas de `[TransportTx` (en `handleControl`) y `[TransportRx]` (en `addControlPacket`).
 
 Se hacen las siguientes consideraciones:
 
@@ -235,13 +235,13 @@ Los gráficos que obtuvimos en el primer caso fueron:
 
 **Saturación de Buffers**
 
-![designcase1.1.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/designcase1.1.png)
+![designcase1.1.png](graficos/designcase1.1.png)
 
 Veamos que el buffer de TraTx se satura rápidamente porque a medida que disminuye el intervalo de generación de paquetes, aumenta mucho la cantidad de paquetes que envío a lo largo del tiempo. Nuestro algoritmo detecta esto y decide que TraTx guarde en su buffer el sobrante de paquetes no enviados para poder controlar el flujo que llega al receptor. Ésto lo hace mediante el recibo de los paquetes de control por parte de TraRx, que le comentan a TraTx cómo se encuentra la capacidad y el tamaño del buffer en el momento (proceso explicado en la sección *Algoritmo*)
 
 **Pérdida de Paquetes**
 
-![designcase1.2.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/designcase1.2.png)
+![designcase1.2.png](graficos/designcase1.2.png)
 
 En la pérdida de paquetes vemos que no se pierde ninguno. Esto es porque no se están enviando los paquetes generados en su totalidad, sólo aquella cantidad que puede llegar a Sink. Cabe destacar que como en este caso la pérdida de paquetes esta directamente relacionada con la cantidad de flujo que está recibiendo NodoRx, basta con controlar la cantidad de paquetes emitida por parte de TraTx correctamente para no perder ni un paquete.
 
@@ -251,7 +251,7 @@ Los gráficos que obtuvimos en el primer caso fueron:
 
 **Saturación de Buffers**
 
-![designcase2.1.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/designcase2.1.png)
+![designcase2.1.png](graficos/designcase2.1.png)
 
 Veamos como el comportamiento es similar al caso 1, con la diferencia cuando el tamaño del intervalo de generación de paquetes es exponential(0.1). 
 
@@ -259,7 +259,7 @@ Como se mencionó anteriormente en la sección de *Algoritmo* para tratar la con
 
 **Pérdida de Paquetes**
 
-![designcase2.2.png](Lab%203%20INFORME%20a755c2d671aa4486b78091a951fc5bee/graficos/designcase2.2.png)
+![designcase2.2.png](graficos/designcase2.2.png)
 
 Aquí podemos observar que nuestro control de congestión actúa correctamente, evitando que paquetes se pierdan a medida que más paquetes van llegando. 
 
