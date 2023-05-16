@@ -1,10 +1,10 @@
 # Análisis del Flujo y la Congestión de una Red Simulada en Omnet++
 
-# Resumen
+## Resumen
 
-En este laboratorio nos adentramos en la simulación de modelos de red en Omnet++, y el análisis de trafico de las respectivas redes bajo condiciones particulares. Nos centramos en dos tareas principales: Análisis y Diseño, en las que analizamos la respuesta de una red ante la introducción de tasas de transmisión y demás parámetros, y diseñamos un control de flujo y congestión para administrar los datos transportados por la red de forma ordenada.
+En este laboratorio nos adentramos en la simulación de modelos de red en Omnet++, y el análisis de trafico de las respectivas redes bajo condiciones particulares. Nos centramos en dos tareas principales: Análisis y Diseño, en las que analizamos la respuesta de una red ante la introducción de tasas de transmisión y demás parámetros, y diseñamos un control de flujo y congestión para administrar los datos transportados por la red de forma adecuada.
 
-# Introducción
+## Introducción
 
 En una red, principalmente en la capa de transporte, hay varios factores que pueden alterar al desempeño de la misma a la hora de enviar y recibir datos. Entre algunos de esos factores, encontraremos los relacionados al flujo y a la congestión de la red.
 
@@ -19,9 +19,9 @@ En conclusión, el control de congestión **regula el tráfico que circula por l
 
 En este proyecto, en particular trabajamos con una simulación discreta del comportamiento de una red usando Omnet++. Esto quiere decir que gracias a la interfaz de Omnet++, podemos analizar el comportamiento de una red a través de una simulación de tiempo continuo y discreto (no necesariamente real) a un costo muy bajo, teniendo paso por paso cómo los datos se mueven a través de la red, pudiendo ver el efecto de distintos eventos en la misma de forma clara y directa. Este tipo de simulación nos es muy útil para poder modelar los controles de flujo y congestión.
 
-## Análisis de Casos
+## Análisis de Casos (primer parte del proyecto)
 
-En la parte de Análisis fue que nosotros, mediante un modelo de red de colas proporcionado por la cátedra, analizamos el comportamiento del tráfico de la red luego de agregar nociones de capacidad como lo es la **tasa de transferencia de datos** y la **memoria del buffer** usando. Para ello, actualizamos el módulo `network.ned` de forma tal que existieran dos compuestos llamados `nodeTx` y `nodeRx` encargados de intervenir en la transferencia de datos y de limitar la transmisión utilizando un buffer y tasas de transferencia. También se utilizó cPacket para simular los objetos de transferencia, con su respectivo tamaño en bytes, y se modificó el archivo `omnetpp.ini` para introducir nuevos parámetros como el tamaño máximo de los buffers:
+En la parte de Análisis fue que nosotros, mediante un modelo de red de colas proporcionado por la cátedra, analizamos el comportamiento del tráfico de la red luego de agregar nociones de capacidad como lo es la **tasa de transferencia de datos** y la **memoria del buffer** usada. Para ello, actualizamos el módulo `network.ned` de forma tal que existieran dos compuestos llamados `nodeTx` y `nodeRx` encargados de intervenir en la transferencia de datos y de limitar la transmisión utilizando un buffer y tasas de transferencia. También se utilizó cPacket para simular los objetos de transferencia, con su respectivo tamaño en bytes, y se modificó el archivo `omnetpp.ini` para introducir nuevos parámetros como el tamaño máximo de los buffers:
 
 - Buffer de NodeTx: almacena los paquetes que vienen de Gen y van hacia Queue. Su tamaño será arbitrario y será de 2000000.
 - Buffer Queue: almacena los paquetes que van desde NodeTx a NodeRx. Tendrá un tamaño de 200.
@@ -88,7 +88,7 @@ Veamos ahora cómo se registraron las pérdidas:
 
 Nuevamente, tenemos gráficos similares al caso 1.
 
-**Preguntas importantes**
+### Preguntas importantes
 
 1. ¿Qué diferencia observa entre el caso de estudio 1 y 2? 
     
@@ -108,128 +108,165 @@ Nuevamente, tenemos gráficos similares al caso 1.
     El control de congestión es un control que se utiliza para regular la cantidad de datos que son **enviados por la red en sí**, debido a que puede producirse un envío masivo para una capacidad de transferencia de la red limitada. Se centra en que la cantidad de datos no sobrepasen los límites de la capacidad de transferencia de la red en sí.
     
 
-## Métodos
+## Tarea de Diseño (segunda parte del proyecto)
 
-Ahora, nosotros en el enfoque anterior de análisis, jugamos con una simulación que no tenía un control de flujo y congestión específico. Es por eso que, en la tarea de diseño, el objetivo que se tiene es la re-estructuración de la red para la implementación de un algoritmo de control de flujo y congestión que nos permita poder comparar mediante un análisis los resultados de *intentar resolver los problemas* vs *no hacer nada*.
+En la segunda parte de este proyecto, el objetivo que se tiene es la re-estructuración de la red para la implementación de un algoritmo de control de flujo y congestión que nos permita poder comparar mediante un análisis los resultados de _intentar resolver los problemas_ vs _no hacer nada_.
 
-### Estructura de la red
+### Estructura de la red ([`network.ned`](network.ned))
 
-La nueva estructura de la red agrega dos elementos importantísimos que se "derivan" de la `Queue` (i.e., son parecidos en cierto aspecto). La idea es crear elementos que sean los buffers de input y output de los módulos de generación (`NodeTx`) y de recepción (`NodeRx`). Estos elementos son llamados `TransportTx` y `TransportRx`. El diagrama de los módulos `NodeTx` y `NodeRx` queda dado por las siguientes estructuras:
+La nueva estructura de la red agrega dos elementos importantísimos que se "derivan" de la `Queue` (i.e., son parecidos en cierto aspecto). La idea es crear elementos que sean los buffers de input y output de los módulos de generación (`NodeTx`) y de recepción (`NodeRx`). Estos elementos son llamados `TransportTx` y `TransportRx`.
+El diagrama de los módulos `NodeTx` y `NodeRx` queda dado por las siguientes estructuras:
 
-![NodeRx.png](img/NodeRx.png)
+![NodeTx](img/NodeTx.png) ![NodeRx](img/NodeRx.png)
 
-![NodeTx.png](img/NodeTx.png)
+Esto nos permite poder crear en la red un canal de retorno desde el nodo de recepción al nodo de generación, brindando la posibilidad de que el receptor lo use para poder enviar mensajes de control al emisor.
+La estructura final que se logra es la siguiente:
 
-Esto nos permite poder crear en la red un canal de retorno desde el nodo de recepción al nodo de generación, brindando la posibilidad de que el receptor lo use para poder enviar mensajes de control al emisor. La estructura final que se logra es la siguiente:
+![Network](img/Network.png)
 
-![Network.png](img/Network.png)
-
-### **Constantes de la red
+### Constantes de la red ([`omnetpp.ini`](omnetpp.ini))
 
 Dada la nueva estructuración de la red, se consideran las siguientes constantes:
 
-network = Network
+```cpp
+[General]
 
+# System parameters
+
+network = Network
 sim-time-limit = 200s
 
 Network.nodeTx.gen.generationInterval = exponential(0.1)
-
 Network.nodeTx.gen.packetByteSize = 12500
 
 Network.queue0.bufferSize = 100
-
 Network.queue1.bufferSize = 200
 
 Network.nodeTx.traTx.bufferSize = 20000000
+Network.nodeRx.traRx.bufferSize = 200
+```
 
-Network.nodeRx.traRx.bufferSize = 200`
+Lo principal para tener en cuenta es que `Network.queue0.bufferSize` se considera `100` por recomendación de los profesores (en el enunciado del proyecto) para un mejor análisis en conjunto de los problemas de flujo y congestión.
 
-Lo principal para tener en cuenta es que `Network.queue0.bufferSize` se considera `100` por recomendación de los profesores (en el enunciado del proyecto) para un mejor análisis en conjunto de los problemas de flujo y congestión.
+### Nuevo tipo de mensaje ([`ControlPacket.msg`](ControlPacket.msg))
 
-### **Nuevo tipo de mensaje**
+Al agregar un nuevo canal de retorno por el cual enviar mensajes, se torna importantísimo generar un nuevo tipo de paquete, el cual sea de control y permita almacenar datos que el receptor llena para que sean leídos e interpretados por el emisor para realizar alguna acción.
+Para ello mismo, se hace uso del archivo [`ControlPacket.msg`](ControlPacket.msg).
 
-Al agregar un nuevo canal de retorno por el cual enviar mensajes, se torna importantísimo generar un nuevo tipo de paquete, el cual sea de control y permita almacenar datos que el receptor llena para que sean leídos e interpretados por el emisor para realizar alguna acción. Para ello mismo, se hace uso del archivo `ControlPacket.msg`.
-
-En este archivo se crea un nuevo tipo de paquete llamado `ControlPacket`, el cual contiene los datos de:
+En este archivo se crea un nuevo tipo de paquete llamado `ControlPacket`, el cual contiene los datos de:
 
 - `totalBuffer`: tamaño total del buffer del receptor
+
 - `remainingBuffer`: capacidad restante del buffer del receptor
-- `timeElapsedToReceivePacket`: cantidad de tiempo que transcurrió entre el envío y la recepción del correspondiente paquete de datos (se explica más a detalle en la sección de *Algoritmo*)
 
-El Framework Omnet++ se encarga automáticamente, al compilar, de crear el .h y .cc correspondientes a este nuevo tipo de paquete, creando su nueva clase que deriva de `cPacket`.
+- `timeElapsedToReceivePacket`: cantidad de tiempo que transcurrió entre el envío y la recepción del correspondiente paquete de datos (se explica más a detalle en la sección de _Algoritmo_)
 
-### **Idea de los elementos de transporte**
+El Framework Omnet++ se encarga automáticamente, al compilar, de crear el .h y .cc correspondientes a este nuevo tipo de paquete, creando su nueva clase que deriva de `cPacket`.
 
-**TransportTx**
+### Idea de los elementos de transporte ([`TransportTx`](TransportTx.cc) y [`TransportRx`](TransportRx.cc))
 
-Este elemento es el encargado de:
-
-1. Recepción de paquetes de datos desde `Gen` y su envío a `Queue0`
-2. Recepción de paquetes de control desde `Queue1` y gestión de acciones que modifiquen los tiempos de (1.) para evitar problemas de flujo y congestión (y, por ende, pérdida de paquetes)
-
-**TransportRx**
+#### TransportTx
 
 Este elemento es el encargado de:
 
-1. Recepción de paquetes de datos desde `Queue0` y su envío a `Sink`
-2. Creación de paquetes de control (uno por cada paquete de dato agregado al buffer) y su envío a `Queue1` con destino a `TransportTx`
+1. Recepción de paquetes de datos desde `Gen` y su envío a `Queue0`
 
-### **Métricas que se gestionan en los distintos módulos**
+2. Recepción de paquetes de control desde `Queue1` y gestión de acciones que modifiquen los tiempos de (1.) para evitar problemas de flujo y congestión (y, por ende, pérdida de paquetes)
+
+#### TransportRx
+
+Este elemento es el encargado de:
+
+1. Recepción de paquetes de datos desde `Queue0` y su envío a `Sink`
+
+2. Creación de paquetes de control (uno por cada paquete de dato agregado al buffer) y su envío a `Queue1` con destino a `TransportTx`
+
+### Métricas que se gestionan en los distintos módulos
 
 - `packetsTransmitted`: cantidad de paquetes que se transmitieron desde el módulo correspondiente. Se encuentra en
+
     - `Network.nodeTx.gen`
+
     - `Network.nodeTx.traTx`
+
 - `bufferSize`: tamaño del buffer de paquetes de datos en el módulo correspondiente. Se encuentra en
+
     - `Network.nodeTx.traTx`
+
     - `Network.queue0`
+
     - `Network.nodeRx.traRx`
+
     - `Network.queue1`
+
 - `packetsReceived`: cantidad de paquetes de datos recibidos en el módulo correspondiente. Se encuentra en
+
     - `Network.nodeRx.traRx`
+
     - `Network.nodeRx.sink`
+
 - `controlPacketSent`: cantidad de paquetes de control enviados en el módulo correspondiente. Se encuentra en
+
     - `Network.nodeRx.traRx`
+
 - `controlPacketReceived`: cantidad de paquetes de control recibidos en el módulo correspondiente. Se encuentra en
+
     - `Network.nodeTx.traTx`
+
 - `Delay`: cantidad de paquetes que llegaron a destino. Se encuentra, por ende, en
+
     - `Network.nodeRx.sink`
+
 - `packetsDropped`: cantidad de paquetes que se perdieron en el módulo. Se encuentra en
+
     - `Network.nodeTx.traTx`
+
     - `Network.queue0`
+
     - `Network.nodeRx.traRx`
+
     - `Network.queue1`
 
-### **Algoritmo sencillo de control de flujo y congestión**
+### Algoritmo sencillo de control de flujo y congestión
 
-Este algoritmo sólo se implementa en secciones específicas de `[TransportTx` (en `handleControl`) y `[TransportRx]` (en `addControlPacket`).
+Este algoritmo sólo se implementa en secciones específicas de [`TransportTx`](TransportTx.cc) (en `handleControl`) y [`TransportRx`](TransportRx.cc) (en `addControlPacket`).
 
 Se hacen las siguientes consideraciones:
 
-- Por cada paquete recibido en `TransportRx` y aceptado (es decir, que no se elimina), se crea su correspondiente mensaje de control, el cual contiene la información de: tamaño actual del buffer, capacidad restante del buffer y total de tiempo que el paquete estuvo en la red desde que salió del emisor hasta que llegó al receptor.
-- En `TransportTx` se recibe la información de control mediante estos paquetes que le llegan desde la `Queue1` y se considera lo siguiente:
-    - Vamos a tener una variable `minSend` que contenga el tiempo mínimo que tardó un mensaje en llegar al receptor (según la información que nos llega por los paquetes de control)
+- Por cada paquete recibido en `TransportRx` y aceptado (es decir, que no se elimina), se crea su correspondiente mensaje de control, el cual contiene la información de: tamaño actual del buffer, capacidad restante del buffer y total de tiempo que el paquete estuvo en la red desde que salió del emisor hasta que llegó al receptor.
+
+- En `TransportTx` se recibe la información de control mediante estos paquetes que le llegan desde la `Queue1` y se considera lo siguiente:
+
+    - Vamos a tener una variable `minSend` que contenga el tiempo mínimo que tardó un mensaje en llegar al receptor (según la información que nos llega por los paquetes de control)
+    
         - Esto nos permite darnos una idea de la congestión de la red y actuar en base a eso
+
         - Se "resetea" cada 50 paquetes de control recibidos para mantener actualizada la información (porque capaz no está congestionada la red pero tiene más carga que antes)
-    - Vamos a tener una variable `controlFactor` que es la responsable del manejo del control de flujo y congestión. Es un valor entre `0` y `1`, el cual se aplica a toda generación de evento de un envío de paquete de datos del siguiente modo:
-        
-        ```jsx
-        void TransportTx::scheduleSendPacketWithDelay(simtime_t delay) { 
-        	scheduleAt(simTime() + delay + delay*controlFactor, endServiceEvent); 
+    
+    - Vamos a tener una variable `controlFactor` que es la responsable del manejo del control de flujo y congestión. Es un valor entre `0` y `1`, el cual se aplica a toda generación de evento de un envío de paquete de datos del siguiente modo:
+        ```cpp
+        void TransportTx::scheduleSendPacketWithDelay(simtime_t delay) {
+            scheduleAt(simTime() + delay + delay*controlFactor, endServiceEvent);
         }
         ```
-        
-    - Respecto al **flujo** se considera lo siguiente:
-        - Si `remainingBuffer <= 0.30*totalBuffer`, entonces se aumenta `controlFactor` en `1e-2` para demorar la salida de paquetes (porque el receptor se esta quedando sin espacio)
-        - Si `remainingBuffer >= 0.50*totalBuffer`, entonces se disminuye `controlFactor` en `1e-2` para acelerar la salida de paquetes (porque el receptor tiene espacio)
-    - Respecto a la **congestión** se considera lo siguiente:
-        - Si `timeElapsedToReceivePacket >= 2*minSend`, entonces se aumenta `controlFactor` en `1e-2` para demorar la salida de paquetes (porque hay mucha más congestión que la registrada en este registro de 50 paquetes)
-        - Si `timeElapsedToReceivePacket <= minSend`, entonces se disminuye `controlFactor` en `1e-2` para acelerar la salida de paquetes (porque tiene menos carga la red que la registrada anteriormente). Además, se actualiza el valor de `minSend`.
+    
+    - Respecto al **flujo** se considera lo siguiente:
 
-## Resultados
+        - Si `remainingBuffer <= 0.30*totalBuffer`, entonces se aumenta `controlFactor` en `1e-2` para demorar la salida de paquetes (porque el receptor se esta quedando sin espacio)
+
+        - Si `remainingBuffer >= 0.50*totalBuffer`, entonces se disminuye `controlFactor` en `1e-2` para acelerar la salida de paquetes (porque el receptor tiene espacio)
+
+    - Respecto a la **congestión** se considera lo siguiente:
+
+        - Si `timeElapsedToReceivePacket >= 2*minSend`, entonces se aumenta `controlFactor` en `1e-2` para demorar la salida de paquetes (porque hay mucha más congestión que la registrada en este registro de 50 paquetes)
+
+        - Si `timeElapsedToReceivePacket <= minSend`, ntonces se disminuye `controlFactor` en `1e-2` para acelerar la salida de paquetes (porque tiene menos carga la red que la registrada anteriormente). Además, se actualiza el valor de `minSend`.
+
+### Resultados
 
 Para conocer cómo fue el comportamiento de la red utilizando el algoritmo desarrollado, utilizamos los casos de estudio 1 y 2 definidos en la parte de Análisis con la diferencia de que el intervalo de generación de los paquetes cada vez disminuye más.
 
-### Primer caso
+#### Primer caso
 
 Los gráficos que obtuvimos en el primer caso fueron:
 
@@ -245,7 +282,7 @@ Veamos que el buffer de TraTx se satura rápidamente porque a medida que disminu
 
 En la pérdida de paquetes vemos que no se pierde ninguno. Esto es porque no se están enviando los paquetes generados en su totalidad, sólo aquella cantidad que puede llegar a Sink. Cabe destacar que como en este caso la pérdida de paquetes esta directamente relacionada con la cantidad de flujo que está recibiendo NodoRx, basta con controlar la cantidad de paquetes emitida por parte de TraTx correctamente para no perder ni un paquete.
 
-### Segundo Caso
+#### Segundo Caso
 
 Los gráficos que obtuvimos en el primer caso fueron:
 
@@ -267,7 +304,7 @@ Si observamos el intervalo de generación de cada imagen, podemos identificar qu
 
 Esto lo hace a medida que va disminuyendo el intervalo de generación, ya que se hace más evidente la congestión en la red cuando existen muchos paquetes en la misma.
 
-**Preguntas importantes**
+#### Preguntas importantes
 
 1. ¿Cómo cree que se comporta su algoritmo de control de flujo y congestión?
     
@@ -277,7 +314,10 @@ Esto lo hace a medida que va disminuyendo el intervalo de generación, ya que se
     
     Como vimos en el desarrollo del *Algoritmo* no. El funcionamiento del algoritmo no es igual en ambos casos. En el caso 1 se presta atención a la cantidad de paquetes en el buffer de TraRx en ese momento, y se realiza un análisis del restante que le queda de tamaño al buffer y el 30 por ciento de la capacidad total para decidir si se debe ralentizar la emisión de paquetes por parte de TraTx.
     
-    Por otra parte, en el caso 2, el algoritmo trabaja por otro lado: “analiza” el tiempo que tardan los paquetes en llegar a TraRx, no la cantidad
+    Por otra parte, en el caso 2, el algoritmo trabaja por otro lado: “analiza” el tiempo que tardan los paquetes en llegar a TraRx, no la cantidad.
     
-
 # Debate
+
+Visto el funcionamiento del algoritmo sencillo planteado en la _Tarea de Diseño_ del presente proyecto, consideramos que para obtener un mejor funcionamiento con una menor pérdida de paquetes y un mayor envío de estos (en casos donde la generación sea muy rápida), la variable `controlFactor` que se encarga del `handleControl` en la capa de Transporte del emisor (i.e., `TransportTx`), **no** tiene que variar en una constante, sino que debe depender del ritmo con el que los paquetes le llegan de la capa de Aplicación (i.e., `Gen`) y el _RTT_ aproximado que se puede calcular (como, por ejemplo, se hace con _TCP Reno_).
+
+Estas modificaciones permitirían que se envíen muchos más paquetes al receptor.
