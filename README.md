@@ -1,5 +1,27 @@
 # Análisis del Flujo y la Congestión de una Red Simulada en Omnet++
 
+## Índice
+
+- [Resumen](#resumen)
+- [Introducción](#introducción)
+- [Análisis de Casos (primer parte del proyecto)](#análisis-de-casos-primer-parte-del-proyecto)
+    - [Primer Caso](#primer-caso)
+    - [Segundo Caso](#segundo-caso)
+    - [Preguntas importantes](#preguntas-importantes)
+- [Tarea de Diseño (segunda parte del proyecto)](#tarea-de-diseño-segunda-parte-del-proyecto)
+    - [Estructura de la red](#estructura-de-la-red-networkned)
+    - [Constantes de la red](#constantes-de-la-red-omnetppini)
+    - [Nuevo tipo de mensaje](#nuevo-tipo-de-mensaje-controlpacketmsg)
+    - [Idea de los elementos de transporte](#idea-de-los-elementos-de-transporte-transporttx-y-transportrx)
+    - [Métricas que se gestionan en los distintos módulos](#métricas-que-se-gestionan-en-los-distintos-módulos)
+    - [Algoritmo sencillo de control de flujo y congestión](#algoritmo-sencillo-de-control-de-flujo-y-congestión)
+    - [Resultados](#resultados)
+        - [Primer Caso](#primer-caso-1)
+        - [Segundo Caso](#segundo-caso-1)
+        - [Preguntas importantes](#preguntas-importantes-1)
+- [Debate](#debate)
+
+
 ## Resumen
 
 En este laboratorio nos adentramos en la simulación de modelos de red en Omnet++, y el análisis de trafico de las respectivas redes bajo condiciones particulares. Nos centramos en dos tareas principales: Análisis y Diseño, en las que analizamos la respuesta de una red ante la introducción de tasas de transmisión y demás parámetros, y diseñamos un control de flujo y congestión para administrar los datos transportados por la red de forma adecuada.
@@ -316,7 +338,7 @@ Esto lo hace a medida que va disminuyendo el intervalo de generación, ya que se
     
     Por otra parte, en el caso 2, el algoritmo trabaja por otro lado: “analiza” el tiempo que tardan los paquetes en llegar a TraRx, no la cantidad.
     
-# Debate
+## Debate
 
 Visto el funcionamiento del algoritmo sencillo planteado en la _Tarea de Diseño_ del presente proyecto, consideramos que para obtener un mejor funcionamiento con una menor pérdida de paquetes y un mayor envío de estos (en casos donde la generación sea muy rápida), la variable `controlFactor` que se encarga del `handleControl` en la capa de Transporte del emisor (i.e., `TransportTx`), **no** tiene que variar en una constante, sino que debe depender del ritmo con el que los paquetes le llegan de la capa de Aplicación (i.e., `Gen`) y el _RTT_ aproximado que se puede calcular (como, por ejemplo, se hace con _TCP Reno_).
 
