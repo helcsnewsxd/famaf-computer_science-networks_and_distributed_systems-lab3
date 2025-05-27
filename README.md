@@ -1,3 +1,16 @@
+> [!note]
+> This repository contains the implementation and evaluation of flow and congestion control algorithms in network traffic simulations, developed as part of the Distributed Systems and Networking course at FAMAF – Universidad Nacional de Córdoba. Authors: Facundo Alvarez, Juan Bratti, and Emanuel Nicolás Herrador.
+>
+> The project includes:
+> 
+> 1. Analysis of network behavior under different traffic scenarios.
+> 2. Design and implementation of a flow and congestion control algorithm for networks.
+> 3. Comparative study of network performance with and without the control algorithm.
+>
+> Simulations are performed using Omnet++ with C++, and data analysis and visualization are done via Jupyter Notebooks.
+>
+> The documentation is in Spanish, originally prepared for academic purposes.
+
 # Análisis del Flujo y la Congestión de una Red Simulada en Omnet++
 
 ## Índice
